@@ -87,12 +87,14 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     let ctx = MainContext::default();
     ctx.spawn_local(async move {
         if let Err(err) = listener.run().await {
-            println!("socket2 listener error: {err}");
+            eprintln!("socket2 listener error: {err}");
         }
     });
 
     ctx.spawn_local(async move {
-        pulse_wrapper.run().await;
+        if let Err(err) = pulse_wrapper.run().await {
+            eprintln!("pulseaudio wrapper error: {err}");
+        }
     });
 
     window.set_child(Some(&root));

@@ -52,11 +52,12 @@ impl PulseaudioWrapper {
         context.connect();
     }
 
-    pub async fn run(&mut self) {
+    pub async fn run(&mut self) -> anyhow::Result<()> {
         self.connect();
 
         let mut rx = self.rx.activate_cloned();
-        while let Ok(event) = rx.recv().await {
+        loop {
+            let event = rx.recv().await?;
             if let PulseaudioEvent::StateChange(
                 pulse::context::State::Terminated | pulse::context::State::Failed,
             ) = event
