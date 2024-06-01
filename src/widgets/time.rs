@@ -30,6 +30,6 @@ impl Widget {
     }
 
     fn format() -> String {
-        Local::now().format("%H:%M").to_string()
+        Local::now().format("󰅐 %H:%M").to_string()
     }
 }

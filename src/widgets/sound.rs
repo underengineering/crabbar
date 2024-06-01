@@ -1,8 +1,5 @@
 use async_broadcast::Receiver;
-use gtk::{
-    glib::{MainContext},
-    prelude::*,
-};
+use gtk::{glib::MainContext, prelude::*};
 use pulse::volume::Volume;
 
 use crate::pulse_wrapper::{PulseaudioEvent, SinkInfo};
@@ -48,7 +45,7 @@ impl Widget {
     fn update_label(label: &gtk::Label, sink_info: &SinkInfo) {
         if let Some(icon) = Self::format_icon(sink_info) {
             let volume = Self::format_volume(sink_info);
-            label.set_text(&format!("{icon}{volume}"));
+            label.set_text(&format!("{icon} {volume}"));
         }
     }
 

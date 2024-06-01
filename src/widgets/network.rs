@@ -56,6 +56,6 @@ impl Widget {
         let tx = network.transmitted();
         let rx = network.received();
 
-        format!("{} {}", Self::format_size(tx), Self::format_size(rx))
+        format!("󰕒 {}󰇚 {}", Self::format_size(tx), Self::format_size(rx))
     }
 }

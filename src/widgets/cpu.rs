@@ -41,6 +41,6 @@ impl Widget {
     fn format(system: &Rc<RefCell<System>>) -> String {
         let system = system.borrow();
         let usage = system.global_cpu_info().cpu_usage();
-        format!("{usage:.0}%")
+        format!(" {usage:.0}%")
     }
 }

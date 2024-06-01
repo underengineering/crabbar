@@ -45,6 +45,6 @@ impl Widget {
         let total = system.total_memory() as f64;
 
         let usage = used / total * 100.0;
-        format!("{usage:.0}%")
+        format!("󰍛 {usage:.0}%")
     }
 }
