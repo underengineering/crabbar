@@ -104,7 +104,7 @@ fn build_ui(app: &gtk::Application, config: &Config) {
 fn main() -> anyhow::Result<ExitCode> {
     gtk::init()?;
 
-    let xdg_config_home = env::var("XDG_CONFIG_HOME").map_or_else(
+    let config_path = env::var("XDG_CONFIG_HOME").map_or_else(
         |_| {
             let mut home = PathBuf::from(env::var("HOME").expect("HOME is not set"));
             home.push(".config");
@@ -113,14 +113,18 @@ fn main() -> anyhow::Result<ExitCode> {
         |x| PathBuf::from(&x),
     );
 
+    let config_path = config_path.join("crabbar");
+
+    env::set_current_dir(&config_path).expect("Failed to set current directory");
+
     let config = {
-        let config_path = xdg_config_home.join("crabbar/config.json");
+        let config_path = config_path.join("config.json");
         let data = fs::read_to_string(config_path).expect("Failed to read config");
         serde_json::from_str::<Config>(&data).expect("Failed to parse config")
     };
 
     let css_provider = {
-        let style_path = xdg_config_home.join("crabbar/style.css");
+        let style_path = config_path.join("style.css");
         if let Ok(data) = fs::read_to_string(style_path) {
             let provider = gtk::CssProvider::new();
             provider.load_from_string(&data);
