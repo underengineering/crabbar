@@ -1,11 +1,9 @@
 use async_broadcast::Receiver;
 use gtk::{
-    glib::{clone, MainContext},
+    glib::{MainContext},
     prelude::*,
 };
 use pulse::volume::Volume;
-use std::{cell::RefCell, rc::Rc};
-use sysinfo::System;
 
 use crate::pulse_wrapper::{PulseaudioEvent, SinkInfo};
 

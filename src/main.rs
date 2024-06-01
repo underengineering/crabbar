@@ -1,9 +1,4 @@
-use std::{
-    cell::RefCell,
-    env, fs,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{cell::RefCell, env, fs, path::PathBuf, rc::Rc};
 
 use gtk::{
     glib::{ExitCode, MainContext},
@@ -86,13 +81,14 @@ fn build_ui(app: &gtk::Application, config: &Config) {
 }
 
 fn main() -> ExitCode {
-    let xdg_config_home = env::var("XDG_CONFIG_HOME")
-        .map(|x| PathBuf::from(&x))
-        .unwrap_or_else(|_| {
+    let xdg_config_home = env::var("XDG_CONFIG_HOME").map_or_else(
+        |_| {
             let mut home = PathBuf::from(env::var("HOME").expect("HOME is not set"));
             home.push(".config");
             home
-        });
+        },
+        |x| PathBuf::from(&x),
+    );
 
     let config = {
         let config_path = xdg_config_home.join("crabbar/config.json");

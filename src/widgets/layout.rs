@@ -23,12 +23,12 @@ impl Widget {
             let main_keyboard = get_main_keyboard().await.unwrap();
             let layout = main_keyboard.active_keymap;
             let layout = layout_map.get(&layout).unwrap_or(&layout);
-            root.set_label(&layout);
+            root.set_label(layout);
 
             while let Ok(event) = events_rx.recv().await {
                 if let Event::ActiveLayout {  layout, .. } = event {
             let layout = layout_map.get(&layout).unwrap_or(&layout);
-                    root.set_label(&layout);
+                    root.set_label(layout);
                 }
             }
         }));
