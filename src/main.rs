@@ -37,6 +37,12 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     let root = gtk::CenterBox::new();
 
     let left_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
+
+    if let Some(image_path) = &config.image_path {
+        let image = widgets::image::Widget::new(image_path);
+        left_box.append(image.widget());
+    }
+
     let workspaces = widgets::workspaces::Widget::new(listener.receiver());
 
     let center_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
