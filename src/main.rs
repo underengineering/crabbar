@@ -43,25 +43,36 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     let active_window = widgets::active_window::Widget::new(listener.receiver());
 
     let right_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
+
     let network = widgets::network::Widget::new(config.network_name.clone());
-    let battery = widgets::battery::Widget::new(config.battery_name.clone());
+    right_box.append(network.widget());
+
+    if let Some(battery_name) = &config.battery_name {
+        let battery = widgets::battery::Widget::new(battery_name.clone());
+        right_box.append(battery.widget());
+    }
+
     let cpu = widgets::cpu::Widget::new(system.clone());
+    right_box.append(cpu.widget());
+
     let memory = widgets::memory::Widget::new(system.clone());
+    right_box.append(memory.widget());
+
     let sound = widgets::sound::Widget::new(pulse_wrapper.receiver());
-    let layout = widgets::layout::Widget::new(listener.receiver(), config.layout_map.clone());
+    right_box.append(sound.widget());
+
+    let layout = widgets::layout::Widget::new(
+        listener.receiver(),
+        config.layout_map.clone().unwrap_or_default(),
+    );
+    right_box.append(layout.widget());
+
     let time = widgets::time::Widget::new();
+    right_box.append(time.widget());
 
     left_box.append(workspaces.widget());
 
     center_box.append(active_window.widget());
-
-    right_box.append(network.widget());
-    right_box.append(battery.widget());
-    right_box.append(cpu.widget());
-    right_box.append(memory.widget());
-    right_box.append(sound.widget());
-    right_box.append(layout.widget());
-    right_box.append(time.widget());
 
     root.set_start_widget(Some(&left_box));
     root.set_center_widget(Some(&center_box));
