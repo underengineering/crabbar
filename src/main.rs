@@ -1,6 +1,7 @@
 use std::{cell::RefCell, env, fs, path::PathBuf, rc::Rc};
 
 use gtk::{
+    gdk::Display,
     glib::{ExitCode, MainContext},
     prelude::*,
 };
@@ -17,6 +18,7 @@ mod widgets;
 
 fn build_ui(app: &gtk::Application, config: &Config) {
     let window = gtk::ApplicationWindow::new(app);
+    window.add_css_class("bar");
 
     window.init_layer_shell();
     window.set_layer(gtk4_layer_shell::Layer::Top);
@@ -80,7 +82,9 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     window.present();
 }
 
-fn main() -> ExitCode {
+fn main() -> anyhow::Result<ExitCode> {
+    gtk::init()?;
+
     let xdg_config_home = env::var("XDG_CONFIG_HOME").map_or_else(
         |_| {
             let mut home = PathBuf::from(env::var("HOME").expect("HOME is not set"));
@@ -96,11 +100,30 @@ fn main() -> ExitCode {
         serde_json::from_str::<Config>(&data).expect("Failed to parse config")
     };
 
+    let css_provider = {
+        let style_path = xdg_config_home.join("crabbar/style.css");
+        if let Ok(data) = fs::read_to_string(style_path) {
+            let provider = gtk::CssProvider::new();
+            provider.load_from_string(&data);
+            Some(provider)
+        } else {
+            None
+        }
+    };
+
+    if let Some(css_provider) = css_provider {
+        gtk::style_context_add_provider_for_display(
+            &Display::default().unwrap(),
+            &css_provider,
+            3000,
+        );
+    }
+
     let app = gtk::Application::builder()
         .application_id("ru.libpcap.crabbar")
         .build();
 
     app.connect_activate(move |app| build_ui(app, &config));
 
-    app.run()
+    Ok(app.run())
 }
