@@ -4,6 +4,7 @@ use gtk::{
     glib::{ExitCode, MainContext},
     prelude::*,
 };
+use gtk4_layer_shell::{Edge, LayerShell};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 
 use hyprland::socket2::listener::Listener;
@@ -15,6 +16,12 @@ mod widgets;
 
 fn build_ui(app: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(app);
+
+    window.init_layer_shell();
+    window.set_layer(gtk4_layer_shell::Layer::Top);
+    window.set_anchor(Edge::Top, true);
+    window.set_anchor(Edge::Left, true);
+    window.set_anchor(Edge::Right, true);
 
     let system = Rc::new(RefCell::new(System::new_with_specifics(
         RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()),
