@@ -1,6 +1,5 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use futures_util::task::LocalSpawnExt;
 use gtk::{
     glib::{ExitCode, MainContext},
     prelude::*,

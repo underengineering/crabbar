@@ -2,7 +2,6 @@
 pub enum Event {
     WorkspaceV2 { id: usize, name: String },
     ActiveWindow { class: String, title: String },
-    Fullscreen { status: bool },
     CreateWorkspaceV2 { id: usize, name: String },
     DestroyWorkspaceV2 { id: usize, name: String },
     RenameWorkspace { id: usize, new_name: String },
