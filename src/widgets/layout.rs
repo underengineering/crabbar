@@ -27,6 +27,7 @@ impl Widget {
 
             while let Ok(event) = events_rx.recv().await {
                 if let Event::ActiveLayout {  layout, .. } = event {
+            let layout = layout_map.get(&layout).unwrap_or(&layout);
                     root.set_label(&layout);
                 }
             }
