@@ -10,6 +10,7 @@ use hyprland::socket2::listener::Listener;
 
 mod battery;
 mod hyprland;
+mod pulse_wrapper;
 mod widgets;
 
 fn build_ui(app: &gtk::Application) {
@@ -20,6 +21,8 @@ fn build_ui(app: &gtk::Application) {
     )));
 
     let root = gtk::CenterBox::new();
+
+    let mut pulse_wrapper = pulse_wrapper::PulseaudioWrapper::new();
 
     let listener = Listener::new();
 
@@ -35,6 +38,7 @@ fn build_ui(app: &gtk::Application) {
     let battery = widgets::battery::Widget::new("BAT0".to_string());
     let cpu = widgets::cpu::Widget::new(system.clone());
     let mem = widgets::memory::Widget::new(system.clone());
+    let sound = widgets::sound::Widget::new(pulse_wrapper.receiver());
     let layout = widgets::layout::Widget::new(listener.receiver(), HashMap::new());
     let time = widgets::time::Widget::new();
 
@@ -42,6 +46,7 @@ fn build_ui(app: &gtk::Application) {
     right_box.append(battery.widget());
     right_box.append(cpu.widget());
     right_box.append(mem.widget());
+    right_box.append(sound.widget());
     right_box.append(layout.widget());
     right_box.append(time.widget());
 
@@ -54,6 +59,10 @@ fn build_ui(app: &gtk::Application) {
         if let Err(err) = listener.run().await {
             println!("socket2 listener error: {err}");
         }
+    });
+
+    ctx.spawn_local(async move {
+        pulse_wrapper.run().await;
     });
 
     window.set_child(Some(&root));
