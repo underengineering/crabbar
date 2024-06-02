@@ -66,7 +66,9 @@ impl Widget {
             } else if sink_info.mute {
                 Some(SPEAKER_MUTED_ICON)
             } else {
-                Some(SPEAKER_ICONS[sink_info.index as usize % SPEAKER_ICONS.len()])
+                let volume_norm = f64::from(sink_info.volume.avg().0) / f64::from(Volume::NORMAL.0);
+                let icon_index = (volume_norm * (SPEAKER_ICONS.len() - 1) as f64).round() as usize;
+                Some(SPEAKER_ICONS[icon_index])
             }
         } else {
             None
