@@ -22,6 +22,7 @@ fn build_ui(app: &gtk::Application, config: &Config) {
 
     window.init_layer_shell();
     window.set_layer(gtk4_layer_shell::Layer::Top);
+    window.auto_exclusive_zone_enable();
     window.set_anchor(Edge::Top, true);
     window.set_anchor(Edge::Left, true);
     window.set_anchor(Edge::Right, true);
