@@ -28,6 +28,21 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     window.set_anchor(Edge::Right, true);
     window.set_namespace("crabbar");
 
+    if let Some(margins) = &config.margins {
+        if let Some(margin) = margins.left {
+            window.set_margin(Edge::Left, margin);
+        }
+        if let Some(margin) = margins.right {
+            window.set_margin(Edge::Right, margin);
+        }
+        if let Some(margin) = margins.top {
+            window.set_margin(Edge::Top, margin);
+        }
+        if let Some(margin) = margins.bottom {
+            window.set_margin(Edge::Bottom, margin);
+        }
+    }
+
     let system = Rc::new(RefCell::new(System::new_with_specifics(
         RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()),
     )));
