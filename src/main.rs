@@ -26,6 +26,7 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     window.set_anchor(Edge::Top, true);
     window.set_anchor(Edge::Left, true);
     window.set_anchor(Edge::Right, true);
+    window.set_namespace("crabbar");
 
     let system = Rc::new(RefCell::new(System::new_with_specifics(
         RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()),
