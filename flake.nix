@@ -18,7 +18,12 @@
     rust-overlay,
     ...
   }:
-    utils.lib.eachDefaultSystem
+    {
+      overlays.default = final: prev: {
+        crabbar = self.packages.${final.system}.crabbar;
+      };
+    }
+    // utils.lib.eachDefaultSystem
     (
       system: let
         # Imports
@@ -34,7 +39,7 @@
             rustc = rust;
           };
           version = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package.version;
-        in {
+        in rec {
           crabbar = rustPlatform.buildRustPackage {
             pname = "crabbar";
             version = version;
@@ -45,6 +50,7 @@
             nativeBuildInputs = with pkgs; [pkg-config];
             buildInputs = with pkgs; [gtk4 gtk4-layer-shell libpulseaudio librsvg];
           };
+          default = crabbar;
         };
 
         devShell = let
