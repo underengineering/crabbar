@@ -57,8 +57,21 @@ impl Widget {
         let workspace = gtk::Label::new(Some(name));
         workspace.set_css_classes(&["workspace"]);
 
-        workspace_map.insert(id, workspace.clone());
-        root.append(&workspace);
+        let mut sorted_workspaces = workspace_map.iter().collect::<Vec<_>>();
+        sorted_workspaces.sort_unstable_by_key(|(id, _)| **id);
+
+        let insert_after = sorted_workspaces
+            .into_iter()
+            .take_while(|(other_id, _)| **other_id < id)
+            .last();
+
+        if let Some((_, insert_after)) = insert_after {
+            root.insert_child_after(&workspace, Some(insert_after));
+        } else {
+            root.append(&workspace);
+        }
+
+        workspace_map.insert(id, workspace);
     }
 
     fn remove_workspace(root: &gtk::Box, workspace_map: &mut WorkspaceMap, id: usize) {
