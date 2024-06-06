@@ -31,7 +31,7 @@ impl Widget {
 
                 label.set_text(&usage);
 
-                gtk::glib::timeout_future_seconds(2).await;
+                gtk::glib::timeout_future_seconds(1).await;
             }
         }));
 
