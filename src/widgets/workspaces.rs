@@ -67,11 +67,7 @@ impl Widget {
 
         if let Some((_, insert_after)) = insert_after {
             root.insert_child_after(&workspace, Some(*insert_after));
-        } else if sorted_workspaces
-            .first()
-            .map(|other| id > *other.0)
-            .unwrap_or(false)
-        {
+        } else if sorted_workspaces.first().is_some_and(|other| id > *other.0) {
             root.append(&workspace);
         } else {
             root.prepend(&workspace);
