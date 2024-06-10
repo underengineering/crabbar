@@ -42,12 +42,15 @@ impl Widget {
     }
 
     fn format_icon(status: &str, capacity: i32) -> &'static str {
+        let capacity_norm = f64::from(capacity) / 100.0;
         if status == "Charging" {
-            let idx = f64::from(capacity) / 100.0 * ICONS_CHARGING.len() as f64 + 0.5;
-            ICONS_CHARGING[idx as usize]
+            let idx = capacity_norm * (ICONS_CHARGING.len() as f64 - 1.0);
+            let idx = idx.round() as usize;
+            ICONS_CHARGING[idx]
         } else {
-            let idx = f64::from(capacity) / 100.0 * ICONS.len() as f64 + 0.5;
-            ICONS[idx as usize]
+            let idx = capacity_norm * (ICONS.len() as f64 - 1.0);
+            let idx = idx.round() as usize;
+            ICONS[idx]
         }
     }
 
