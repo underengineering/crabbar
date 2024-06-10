@@ -61,14 +61,20 @@ impl Widget {
         sorted_workspaces.sort_unstable_by_key(|(id, _)| **id);
 
         let insert_after = sorted_workspaces
-            .into_iter()
+            .iter()
             .take_while(|(other_id, _)| **other_id < id)
             .last();
 
         if let Some((_, insert_after)) = insert_after {
-            root.insert_child_after(&workspace, Some(insert_after));
-        } else {
+            root.insert_child_after(&workspace, Some(*insert_after));
+        } else if sorted_workspaces
+            .first()
+            .map(|other| id > *other.0)
+            .unwrap_or(false)
+        {
             root.append(&workspace);
+        } else {
+            root.prepend(&workspace);
         }
 
         workspace_map.insert(id, workspace);
