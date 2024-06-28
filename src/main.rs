@@ -2,6 +2,7 @@ use std::{cell::RefCell, env, fs, path::PathBuf, rc::Rc};
 
 use gtk::{
     gdk::Display,
+    gio::ApplicationFlags,
     glib::{ExitCode, MainContext},
     prelude::*,
 };
@@ -161,6 +162,7 @@ fn main() -> anyhow::Result<ExitCode> {
 
     let app = gtk::Application::builder()
         .application_id("ru.libpcap.crabbar")
+        .flags(ApplicationFlags::NON_UNIQUE)
         .build();
 
     app.connect_activate(move |app| build_ui(app, &config));
