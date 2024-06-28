@@ -40,6 +40,23 @@ impl Widget {
 
     fn update(icon: &gtk::Image, label: &gtk::Label, class: &str, title: &str) {
         icon.set_from_icon_name(Some(class));
-        label.set_text(title);
+
+        let length = title.chars().count();
+
+        // Truncate if over 60 chars
+        if length > 60 {
+            // Get 60th character's index
+            let truncated_length = title
+                .char_indices()
+                .enumerate()
+                .take_while(|(a, (_, _))| *a < 60)
+                .last()
+                .unwrap()
+                .1
+                 .0;
+            label.set_text(&format!("{}...", &title[..truncated_length]));
+        } else {
+            label.set_text(title);
+        };
     }
 }
