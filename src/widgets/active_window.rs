@@ -39,7 +39,7 @@ impl Widget {
     }
 
     fn update(icon: &gtk::Image, label: &gtk::Label, class: &str, title: &str) {
-        icon.set_from_icon_name(Some(class));
+        icon.set_icon_name(Some(class));
 
         let length = title.chars().count();
 
