@@ -19,32 +19,36 @@ impl Widget {
         root.set_css_classes(&["widget", "workspaces"]);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong root => async move {
-            let mut workspace_map = WorkspaceMap::new();
+        ctx.spawn_local(clone!(
+            #[strong]
+            root,
+            async move {
+                let mut workspace_map = WorkspaceMap::new();
 
-            let mut workspaces = get_workspaces().await.expect("Failed to get workspaces");
-            workspaces.sort_unstable_by_key(|workspace| workspace.id);
+                let mut workspaces = get_workspaces().await.expect("Failed to get workspaces");
+                workspaces.sort_unstable_by_key(|workspace| workspace.id);
 
-            for workspace in &workspaces {
-                Self::add_workspace(&root, &mut workspace_map, workspace.id , &workspace.name);
-            }
+                for workspace in &workspaces {
+                    Self::add_workspace(&root, &mut workspace_map, workspace.id, &workspace.name);
+                }
 
-            let mut old_workspace: Option<gtk::Label> = None;
-            while let Ok(event) = events_rx.recv().await {
-                match event {
-                    Event::CreateWorkspaceV2 { id, name } => {
-                        Self::add_workspace(&root, &mut workspace_map, id, &name);
+                let mut old_workspace: Option<gtk::Label> = None;
+                while let Ok(event) = events_rx.recv().await {
+                    match event {
+                        Event::CreateWorkspaceV2 { id, name } => {
+                            Self::add_workspace(&root, &mut workspace_map, id, &name);
+                        }
+                        Event::DestroyWorkspaceV2 { id, .. } => {
+                            Self::remove_workspace(&root, &mut workspace_map, id);
+                        }
+                        Event::WorkspaceV2 { id, .. } => {
+                            Self::activate_workspace(&mut old_workspace, &mut workspace_map, id);
+                        }
+                        _ => {}
                     }
-                    Event::DestroyWorkspaceV2 { id, .. } => {
-                        Self::remove_workspace(&root, &mut workspace_map, id);
-                    }
-                    Event::WorkspaceV2 { id, .. } => {
-                        Self::activate_workspace(&mut old_workspace, &mut workspace_map, id);
-                    }
-                    _ => {}
                 }
             }
-        }));
+        ));
 
         Self { root }
     }

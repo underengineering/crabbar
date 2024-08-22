@@ -1,8 +1,5 @@
 use async_broadcast::Receiver;
-use gtk::{
-    glib::{clone, MainContext},
-    prelude::*,
-};
+use gtk::{glib::MainContext, prelude::*};
 
 use crate::hyprland::socket2::events::Event;
 
@@ -23,13 +20,13 @@ impl Widget {
         root.append(&label);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong root => async move {
+        ctx.spawn_local(async move {
             while let Ok(event) = events_rx.recv().await {
                 if let Event::ActiveWindow { class, title } = event {
                     Self::update(&icon, &label, &class, &title);
                 }
             }
-        }));
+        });
 
         Self { root }
     }

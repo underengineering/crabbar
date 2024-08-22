@@ -19,19 +19,23 @@ impl Widget {
         root.set_css_classes(&["widget", "layout"]);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong root => async move {
-            let main_keyboard = get_main_keyboard().await.unwrap();
-            let layout = main_keyboard.active_keymap;
-            let layout = layout_map.get(&layout).unwrap_or(&layout);
-            root.set_label(layout);
+        ctx.spawn_local(clone!(
+            #[strong]
+            root,
+            async move {
+                let main_keyboard = get_main_keyboard().await.unwrap();
+                let layout = main_keyboard.active_keymap;
+                let layout = layout_map.get(&layout).unwrap_or(&layout);
+                root.set_label(layout);
 
-            while let Ok(event) = events_rx.recv().await {
-                if let Event::ActiveLayout {  layout, .. } = event {
-            let layout = layout_map.get(&layout).unwrap_or(&layout);
-                    root.set_label(layout);
+                while let Ok(event) = events_rx.recv().await {
+                    if let Event::ActiveLayout { layout, .. } = event {
+                        let layout = layout_map.get(&layout).unwrap_or(&layout);
+                        root.set_label(layout);
+                    }
                 }
             }
-        }));
+        ));
 
         Self { root }
     }

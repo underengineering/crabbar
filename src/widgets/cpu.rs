@@ -18,18 +18,24 @@ impl Widget {
         root.append(&label);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong label => async move {
-            loop {
-                let usage = {
-                    system.borrow_mut().refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage());
-                    Self::format(&system)
-                };
+        ctx.spawn_local(clone!(
+            #[strong]
+            label,
+            async move {
+                loop {
+                    let usage = {
+                        system
+                            .borrow_mut()
+                            .refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage());
+                        Self::format(&system)
+                    };
 
-                label.set_text(&usage);
+                    label.set_text(&usage);
 
-                gtk::glib::timeout_future_seconds(2).await;
+                    gtk::glib::timeout_future_seconds(2).await;
+                }
             }
-        }));
+        ));
 
         Self { root }
     }

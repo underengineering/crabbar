@@ -26,13 +26,17 @@ impl Widget {
         root.append(&label);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong label => async move {
-            loop {
-                gtk::glib::timeout_future_seconds(10).await;
-                let capacity = Self::format(&battery_name);
-                label.set_text(&capacity);
+        ctx.spawn_local(clone!(
+            #[strong]
+            label,
+            async move {
+                loop {
+                    gtk::glib::timeout_future_seconds(10).await;
+                    let capacity = Self::format(&battery_name);
+                    label.set_text(&capacity);
+                }
             }
-        }));
+        ));
 
         Self { root }
     }

@@ -15,12 +15,16 @@ impl Widget {
         root.set_css_classes(&["widget", "time"]);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong root => async move {
-            loop {
-                gtk::glib::timeout_future_seconds(1).await;
-                root.set_text(&Self::format());
-           }
-        }));
+        ctx.spawn_local(clone!(
+            #[strong]
+            root,
+            async move {
+                loop {
+                    gtk::glib::timeout_future_seconds(1).await;
+                    root.set_text(&Self::format());
+                }
+            }
+        ));
 
         Self { root }
     }

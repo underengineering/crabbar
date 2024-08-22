@@ -22,18 +22,22 @@ impl Widget {
         root.append(&label);
 
         let ctx = MainContext::default();
-        ctx.spawn_local(clone!(@strong label => async move {
-            loop {
-                networks.refresh();
+        ctx.spawn_local(clone!(
+            #[strong]
+            label,
+            async move {
+                loop {
+                    networks.refresh();
 
-                let network = &networks[&network_name];
-                let usage = Self::format(network);
+                    let network = &networks[&network_name];
+                    let usage = Self::format(network);
 
-                label.set_text(&usage);
+                    label.set_text(&usage);
 
-                gtk::glib::timeout_future_seconds(1).await;
+                    gtk::glib::timeout_future_seconds(1).await;
+                }
             }
-        }));
+        ));
 
         Self { root }
     }
