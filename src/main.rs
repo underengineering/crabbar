@@ -45,7 +45,7 @@ fn build_ui(app: &gtk::Application, config: &Config) {
     }
 
     let system = Rc::new(RefCell::new(System::new_with_specifics(
-        RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()),
+        RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing().with_cpu_usage()),
     )));
 
     let mut pulse_wrapper = pulse_wrapper::PulseaudioWrapper::new();

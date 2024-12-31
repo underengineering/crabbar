@@ -26,7 +26,7 @@ impl Widget {
                     let usage = {
                         system
                             .borrow_mut()
-                            .refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
+                            .refresh_memory_specifics(MemoryRefreshKind::nothing().with_ram());
                         Self::format(&system)
                     };
 

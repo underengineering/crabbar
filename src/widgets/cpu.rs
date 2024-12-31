@@ -26,7 +26,7 @@ impl Widget {
                     let usage = {
                         system
                             .borrow_mut()
-                            .refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage());
+                            .refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
                         Self::format(&system)
                     };
 

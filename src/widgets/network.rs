@@ -27,7 +27,7 @@ impl Widget {
             label,
             async move {
                 loop {
-                    networks.refresh();
+                    networks.refresh(false);
 
                     let network = &networks[&network_name];
                     let usage = Self::format(network);
