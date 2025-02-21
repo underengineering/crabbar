@@ -3,6 +3,7 @@ use gtk::{
     glib::{clone, MainContext},
     prelude::*,
 };
+use relm4_macros::view;
 
 pub struct Widget {
     root: gtk::Label,
@@ -10,9 +11,12 @@ pub struct Widget {
 
 impl Widget {
     pub fn new() -> Self {
-        let time = Self::format();
-        let root = gtk::Label::new(Some(&time));
-        root.set_css_classes(&["widget", "time"]);
+        view! {
+            root = gtk::Label {
+                set_text: &Self::format(),
+                set_css_classes: &["widget", "time"],
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(

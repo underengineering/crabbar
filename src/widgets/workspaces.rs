@@ -1,3 +1,4 @@
+use relm4_macros::view;
 use std::collections::HashMap;
 
 use async_broadcast::Receiver;
@@ -15,8 +16,14 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(mut events_rx: Receiver<Event>) -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "workspaces"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
+
+                set_css_classes: &["widget", "workspaces"],
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(

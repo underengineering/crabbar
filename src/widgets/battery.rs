@@ -2,6 +2,7 @@ use gtk::{
     glib::{clone, MainContext},
     prelude::*,
 };
+use relm4_macros::view;
 
 use crate::battery::get_batteries;
 
@@ -19,11 +20,18 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(battery_name: String) -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "battery"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
 
-        let label = gtk::Label::new(Some(&Self::format(&battery_name)));
-        root.append(&label);
+                set_css_classes: &["widget", "battery"],
+
+                append: label = &gtk::Label {
+                    set_text: &Self::format(&battery_name),
+                }
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(

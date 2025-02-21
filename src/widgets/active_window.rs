@@ -1,5 +1,6 @@
 use async_broadcast::Receiver;
 use gtk::{glib::MainContext, prelude::*};
+use relm4_macros::view;
 
 use crate::hyprland::socket2::events::Event;
 
@@ -9,15 +10,19 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(mut events_rx: Receiver<Event>) -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "active-window"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
 
-        let icon = gtk::Image::new();
-        root.append(&icon);
+                set_css_classes: &["widget", "active-window"],
 
-        let label = gtk::Label::new(None);
-        label.set_css_classes(&["name"]);
-        root.append(&label);
+                append: icon = &gtk::Image::new(),
+                append: label = &gtk::Label {
+                    set_css_classes: &["name"]
+                },
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(async move {

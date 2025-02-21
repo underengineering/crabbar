@@ -1,6 +1,7 @@
 use async_broadcast::Receiver;
 use gtk::{glib::MainContext, prelude::*};
 use pulse::volume::Volume;
+use relm4_macros::view;
 
 use crate::pulse_wrapper::{PulseaudioEvent, SinkInfo};
 
@@ -10,11 +11,16 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(mut pulse_rx: Receiver<PulseaudioEvent>) -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "sound"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
 
-        let label = gtk::Label::new(None);
-        root.append(&label);
+                set_css_classes: &["widget", "sound"],
+
+                append: label = &gtk::Label {}
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(async move {

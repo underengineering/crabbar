@@ -1,4 +1,5 @@
 use gtk::prelude::*;
+use relm4_macros::view;
 use std::path::Path;
 
 pub struct Widget {
@@ -7,8 +8,12 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(path: &Path) -> Self {
-        let root = gtk::Image::from_file(path);
-        root.set_css_classes(&["widget", "image"]);
+        view! {
+            root = gtk::Image {
+                set_from_file: Some(path),
+                set_css_classes: &["widget", "image"],
+            }
+        }
 
         Self { root }
     }

@@ -1,3 +1,4 @@
+use relm4_macros::view;
 use std::collections::HashMap;
 
 use async_broadcast::Receiver;
@@ -15,8 +16,11 @@ pub struct Widget {
 type LayoutNameMap = HashMap<String, String>;
 impl Widget {
     pub fn new(mut events_rx: Receiver<Event>, layout_map: LayoutNameMap) -> Self {
-        let root = gtk::Label::new(None);
-        root.set_css_classes(&["widget", "layout"]);
+        view! {
+            root = gtk::Label {
+                set_css_classes: &["widget", "layout"],
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(

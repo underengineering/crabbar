@@ -2,6 +2,7 @@ use gtk::{
     glib::{clone, MainContext},
     prelude::*,
 };
+use relm4_macros::view;
 use sysinfo::{NetworkData, Networks};
 
 pub struct Widget {
@@ -12,14 +13,18 @@ impl Widget {
     pub fn new(network_name: String) -> Self {
         let mut networks = Networks::new_with_refreshed_list();
 
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "network"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
 
-        let label = {
-            let network = &networks[&network_name];
-            gtk::Label::new(Some(&Self::format(network)))
-        };
-        root.append(&label);
+                set_css_classes: &["widget", "network"],
+
+                append: label = &gtk::Label {
+                    set_text: &Self::format(&networks[&network_name])
+                }
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(

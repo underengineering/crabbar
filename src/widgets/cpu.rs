@@ -2,6 +2,7 @@ use gtk::{
     glib::{clone, MainContext},
     prelude::*,
 };
+use relm4_macros::view;
 use std::{cell::RefCell, rc::Rc};
 use sysinfo::{CpuRefreshKind, System};
 
@@ -11,11 +12,18 @@ pub struct Widget {
 
 impl Widget {
     pub fn new(system: Rc<RefCell<System>>) -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-        root.set_css_classes(&["widget", "cpu"]);
+        view! {
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 4,
 
-        let label = gtk::Label::new(Some(&Self::format(&system)));
-        root.append(&label);
+                set_css_classes: &["widget", "cpu"],
+
+                append: label = &gtk::Label {
+                    set_text: &Self::format(&system),
+                }
+            }
+        }
 
         let ctx = MainContext::default();
         ctx.spawn_local(clone!(
