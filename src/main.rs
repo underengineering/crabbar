@@ -200,6 +200,22 @@ impl SimpleComponent for AppModel {
         };
 
         let widgets = view_output!();
+
+        if let Some(margins) = &config.margins {
+            if let Some(margin) = margins.left {
+                root.set_margin(Edge::Left, margin);
+            }
+            if let Some(margin) = margins.right {
+                root.set_margin(Edge::Right, margin);
+            }
+            if let Some(margin) = margins.top {
+                root.set_margin(Edge::Top, margin);
+            }
+            if let Some(margin) = margins.bottom {
+                root.set_margin(Edge::Bottom, margin);
+            }
+        }
+
         ctx.spawn_local({
             let sender = sender.clone();
             async move {
