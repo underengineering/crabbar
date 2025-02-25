@@ -96,17 +96,13 @@ impl SimpleComponent for AppModel {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let image_widget = if let Some(image_path) = config.image_path {
-            Some(
-                ImageModel::builder()
-                    .launch(image_path)
-                    .detach()
-                    .widget()
-                    .clone(),
-            )
-        } else {
-            None
-        };
+        let image_widget = config.image_path.map(|image_path| {
+            ImageModel::builder()
+                .launch(image_path)
+                .detach()
+                .widget()
+                .clone()
+        });
 
         let ctx = MainContext::default();
         let workspaces = {
