@@ -1,5 +1,5 @@
-#[derive(Clone)]
-pub enum Event {
+#[derive(Debug, Clone)]
+pub enum HyprlandEvent {
     WorkspaceV2 { id: usize, name: String },
     ActiveWindow { class: String, title: String },
     CreateWorkspaceV2 { id: usize, name: String },
@@ -8,7 +8,7 @@ pub enum Event {
     ActiveLayout { name: String, layout: String },
 }
 
-impl Event {
+impl HyprlandEvent {
     pub fn new(value: &str) -> anyhow::Result<Self> {
         let (event_name, data) = value.split_once(">>").expect("Invalid event");
         match event_name {

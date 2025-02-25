@@ -19,35 +19,6 @@ fn read_to_string_buf<P: AsRef<Path>>(path: P, buffer: &mut String) -> io::Resul
     Ok(buffer)
 }
 
-pub fn is_on_ac() -> bool {
-    let power_supply_dir = Path::new("/sys/class/power_supply");
-    let power_supplies = power_supply_dir
-        .read_dir()
-        .expect("Failed to read /sys/class/power_supply/");
-
-    let mut buffer = String::with_capacity(16);
-    for entry in power_supplies {
-        let entry = entry.expect("Failed to get power supply entry").path();
-
-        // Skip batteries
-        if read_to_string_buf(entry.join("type"), &mut buffer)
-            .map(|t| t != "Mains\n")
-            .unwrap_or(true)
-        {
-            continue;
-        }
-
-        if read_to_string_buf(entry.join("online"), &mut buffer)
-            .map(|value| value == "1\n")
-            .unwrap_or(false)
-        {
-            return true;
-        }
-    }
-
-    false
-}
-
 // https://github.com/elkowar/eww/blob/dc3129aee2806823bdad87785f7ef80651d5245c/crates/eww/src/config/system_stats.rs#L118
 // https://github.com/valpackett/systemstat/blob/cbd9c1638b792d1819479f0c2baa5840f65af727/src/platform/linux.rs#L584
 pub fn get_batteries() -> HashMap<String, BatteryInfo> {

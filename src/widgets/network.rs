@@ -1,56 +1,19 @@
-use gtk::{
-    glib::{clone, MainContext},
+use relm4::{
+    gtk::{self, prelude::*},
     prelude::*,
 };
-use relm4_macros::view;
-use sysinfo::{NetworkData, Networks};
 
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum NetworkMsg {
+    UpdateStats { transmitted: u64, received: u64 },
 }
 
-impl Widget {
-    pub fn new(network_name: String) -> Self {
-        let mut networks = Networks::new_with_refreshed_list();
+pub struct NetworkModel {
+    transmitted: u64,
+    received: u64,
+}
 
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
-
-                set_css_classes: &["widget", "network"],
-
-                append: label = &gtk::Label {
-                    set_text: &Self::format(&networks[&network_name])
-                }
-            }
-        }
-
-        let ctx = MainContext::default();
-        ctx.spawn_local(clone!(
-            #[strong]
-            label,
-            async move {
-                loop {
-                    networks.refresh(false);
-
-                    let network = &networks[&network_name];
-                    let usage = Self::format(network);
-
-                    label.set_text(&usage);
-
-                    gtk::glib::timeout_future_seconds(1).await;
-                }
-            }
-        ));
-
-        Self { root }
-    }
-
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
-    }
-
+impl NetworkModel {
     fn format_size(size: u64) -> String {
         if size < 1024 {
             format!("{size:.1}B")
@@ -60,11 +23,58 @@ impl Widget {
             format!("{:.1}MB", size as f64 / 1024.0 / 1024.0)
         }
     }
+}
 
-    fn format(network: &NetworkData) -> String {
-        let tx = network.transmitted();
-        let rx = network.received();
+#[relm4::component(pub)]
+impl SimpleComponent for NetworkModel {
+    type Init = ();
 
-        format!("󰕒 {}󰇚 {}", Self::format_size(tx), Self::format_size(rx))
+    type Input = NetworkMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "network"],
+
+            append: label = &gtk::Label {
+                #[watch]
+                set_text: {
+                    let tx = model.transmitted;
+                    let rx = model.received;
+
+                    &format!("󰕒 {}󰇚 {}", Self::format_size(tx), Self::format_size(rx))
+                }
+            }
+        }
+    }
+
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self {
+            transmitted: 0,
+            received: 0,
+        };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            NetworkMsg::UpdateStats {
+                transmitted,
+                received,
+            } => {
+                self.transmitted = transmitted;
+                self.received = received;
+            }
+        }
     }
 }

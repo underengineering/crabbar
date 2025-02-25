@@ -1,54 +1,28 @@
-use async_broadcast::Receiver;
-use gtk::{glib::MainContext, prelude::*};
-use relm4_macros::view;
+use relm4::{
+    gtk::{self, prelude::*},
+    prelude::*,
+};
+use std::borrow::Cow;
 
-use crate::hyprland::socket2::events::Event;
-
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum ActiveWindowMsg {
+    ActiveWindow { title: String, class: String },
 }
 
-impl Widget {
-    pub fn new(mut events_rx: Receiver<Event>) -> Self {
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
+pub struct ActiveWindowModel {
+    icon_name: String,
+    title: String,
+}
 
-                set_css_classes: &["widget", "active-window"],
-
-                append: icon = &gtk::Image::new(),
-                append: label = &gtk::Label {
-                    set_css_classes: &["name"]
-                },
-            }
-        }
-
-        let ctx = MainContext::default();
-        ctx.spawn_local(async move {
-            while let Ok(event) = events_rx.recv().await {
-                if let Event::ActiveWindow { class, title } = event {
-                    Self::update(&icon, &label, &class, &title);
-                }
-            }
-        });
-
-        Self { root }
-    }
-
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
-    }
-
-    fn update(icon: &gtk::Image, label: &gtk::Label, class: &str, title: &str) {
-        icon.set_icon_name(Some(class));
-
-        let length = title.chars().count();
+impl ActiveWindowModel {
+    fn window_name(&self) -> Cow<str> {
+        let length = self.title.chars().count();
 
         // Truncate if over 60 chars
         if length > 60 {
             // Get 60th character's index
-            let truncated_length = title
+            let truncated_length = self
+                .title
                 .char_indices()
                 .enumerate()
                 .take_while(|(a, (_, _))| *a < 60)
@@ -56,9 +30,60 @@ impl Widget {
                 .unwrap()
                 .1
                  .0;
-            label.set_text(&format!("{}...", &title[..truncated_length]));
+            Cow::Owned(format!("{}...", &self.title[..truncated_length]))
         } else {
-            label.set_text(title);
+            Cow::Borrowed(&self.title)
+        }
+    }
+}
+
+#[relm4::component(pub)]
+impl SimpleComponent for ActiveWindowModel {
+    type Init = ();
+
+    type Input = ActiveWindowMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "active-window"],
+
+            append: icon = &gtk::Image {
+                #[watch]
+                set_icon_name: Some(&model.icon_name),
+            },
+            append: label = &gtk::Label {
+                #[watch]
+                set_text: &model.window_name(),
+                set_css_classes: &["name"]
+            },
+        }
+    }
+
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self {
+            icon_name: String::new(),
+            title: String::new(),
         };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
+        match msg {
+            ActiveWindowMsg::ActiveWindow { class, title } => {
+                self.icon_name = class;
+                self.title = title;
+            }
+        }
     }
 }

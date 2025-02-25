@@ -1,50 +1,58 @@
-use relm4_macros::view;
-use std::collections::HashMap;
-
-use async_broadcast::Receiver;
-use gtk::{
-    glib::{clone, MainContext},
+use relm4::{
+    gtk::{self, prelude::*},
     prelude::*,
 };
+use std::collections::HashMap;
 
-use crate::hyprland::{ctl::get_main_keyboard, socket2::events::Event};
-
-pub struct Widget {
-    root: gtk::Label,
+#[derive(Debug)]
+pub enum LayoutMsg {
+    ActiveLayout { layout: String },
 }
 
-type LayoutNameMap = HashMap<String, String>;
-impl Widget {
-    pub fn new(mut events_rx: Receiver<Event>, layout_map: LayoutNameMap) -> Self {
-        view! {
-            root = gtk::Label {
-                set_css_classes: &["widget", "layout"],
-            }
+pub struct LayoutInit {
+    pub active_layout: String,
+    pub layout_map: HashMap<String, String>,
+}
+
+pub struct LayoutModel {
+    layout: String,
+    layout_map: HashMap<String, String>,
+}
+
+#[relm4::component(pub)]
+impl SimpleComponent for LayoutModel {
+    type Init = LayoutInit;
+
+    type Input = LayoutMsg;
+    type Output = ();
+
+    view! {
+        gtk::Label {
+            set_css_classes: &["widget", "layout"],
+
+            #[watch]
+            set_text: model.layout_map.get(&model.layout).unwrap_or(&model.layout),
         }
-
-        let ctx = MainContext::default();
-        ctx.spawn_local(clone!(
-            #[strong]
-            root,
-            async move {
-                let main_keyboard = get_main_keyboard().await.unwrap();
-                let layout = main_keyboard.active_keymap;
-                let layout = layout_map.get(&layout).unwrap_or(&layout);
-                root.set_label(layout);
-
-                while let Ok(event) = events_rx.recv().await {
-                    if let Event::ActiveLayout { layout, .. } = event {
-                        let layout = layout_map.get(&layout).unwrap_or(&layout);
-                        root.set_label(layout);
-                    }
-                }
-            }
-        ));
-
-        Self { root }
     }
 
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
+    fn init(
+        init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self {
+            layout: init.active_layout,
+            layout_map: init.layout_map,
+        };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            LayoutMsg::ActiveLayout { layout } => self.layout = layout,
+        }
     }
 }

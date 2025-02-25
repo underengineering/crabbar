@@ -1,64 +1,60 @@
-use gtk::{
-    glib::{clone, MainContext},
+use relm4::{
+    gtk::{self, prelude::*},
     prelude::*,
 };
-use relm4_macros::view;
-use std::{cell::RefCell, rc::Rc};
-use sysinfo::{MemoryRefreshKind, System};
 
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum MemoryMsg {
+    UpdateStats { used: u64, total: u64 },
 }
 
-impl Widget {
-    pub fn new(system: Rc<RefCell<System>>) -> Self {
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
+pub struct MemoryModel {
+    used: u64,
+    total: u64,
+}
 
-                set_css_classes: &["widget", "memory"],
+#[relm4::component(pub)]
+impl SimpleComponent for MemoryModel {
+    type Init = ();
 
-                append: label = &gtk::Label {
-                    set_text: &Self::format(&system),
+    type Input = MemoryMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "cpu"],
+
+            append: label = &gtk::Label {
+                #[watch]
+                set_text: {
+                    let usage = model.used as f64 / model.total as f64 * 100.0;
+                    &format!("󰍛 {usage:.0}%")
                 }
             }
         }
+    }
 
-        let ctx = MainContext::default();
-        ctx.spawn_local(clone!(
-            #[strong]
-            label,
-            async move {
-                loop {
-                    let usage = {
-                        system
-                            .borrow_mut()
-                            .refresh_memory_specifics(MemoryRefreshKind::nothing().with_ram());
-                        Self::format(&system)
-                    };
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self { used: 0, total: 0 };
 
-                    label.set_text(&usage);
+        let widgets = view_output!();
 
-                    gtk::glib::timeout_future_seconds(2).await;
-                }
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            MemoryMsg::UpdateStats { used, total } => {
+                self.used = used;
+                self.total = total;
             }
-        ));
-
-        Self { root }
-    }
-
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
-    }
-
-    fn format(system: &Rc<RefCell<System>>) -> String {
-        let system = system.borrow();
-
-        let used = system.used_memory() as f64;
-        let total = system.total_memory() as f64;
-
-        let usage = used / total * 100.0;
-        format!("󰍛 {usage:.0}%")
+        }
     }
 }

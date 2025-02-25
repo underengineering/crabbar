@@ -45,26 +45,11 @@ impl PulseaudioWrapper {
         self.rx.activate_cloned()
     }
 
-    fn connect(&self) {
+    pub fn connect(&self) -> anyhow::Result<()> {
         let context = pulse::context::Context::new(&self.mainloop, "crabbar")
             .expect("Failed to create context");
         let mut context = Context::new(context, self.tx.clone());
-        context.connect();
-    }
-
-    pub async fn run(&mut self) -> anyhow::Result<()> {
-        self.connect();
-
-        let mut rx = self.rx.activate_cloned();
-        loop {
-            let event = rx.recv().await?;
-            if let PulseaudioEvent::StateChange(
-                pulse::context::State::Terminated | pulse::context::State::Failed,
-            ) = event
-            {
-                self.connect();
-            }
-        }
+        context.connect()
     }
 }
 
@@ -79,7 +64,7 @@ impl Context {
         Self { context, tx }
     }
 
-    fn connect(&mut self) {
+    fn connect(&mut self) -> anyhow::Result<()> {
         let context_ref = self.context.clone();
         let tx = self.tx.clone();
         self.context
@@ -102,8 +87,9 @@ impl Context {
 
         self.context
             .borrow_mut()
-            .connect(None, FlagSet::NOAUTOSPAWN, None)
-            .unwrap();
+            .connect(None, FlagSet::NOAUTOSPAWN, None)?;
+
+        Ok(())
     }
 
     fn subscribe(context: &Rc<RefCell<pulse::context::Context>>, tx: &Sender<PulseaudioEvent>) {

@@ -1,60 +1,53 @@
-use gtk::{
-    glib::{clone, MainContext},
+use relm4::{
+    gtk::{self, prelude::*},
     prelude::*,
 };
-use relm4_macros::view;
-use std::{cell::RefCell, rc::Rc};
-use sysinfo::{CpuRefreshKind, System};
 
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum CpuMsg {
+    UpdateUsage { usage: f32 },
 }
 
-impl Widget {
-    pub fn new(system: Rc<RefCell<System>>) -> Self {
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
+pub struct CpuModel {
+    usage: f32,
+}
 
-                set_css_classes: &["widget", "cpu"],
+#[relm4::component(pub)]
+impl SimpleComponent for CpuModel {
+    type Init = ();
 
-                append: label = &gtk::Label {
-                    set_text: &Self::format(&system),
-                }
+    type Input = CpuMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "cpu"],
+
+            append: label = &gtk::Label {
+                #[watch]
+                set_text: &format!(" {:.0}%", model.usage)
             }
         }
-
-        let ctx = MainContext::default();
-        ctx.spawn_local(clone!(
-            #[strong]
-            label,
-            async move {
-                loop {
-                    let usage = {
-                        system
-                            .borrow_mut()
-                            .refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
-                        Self::format(&system)
-                    };
-
-                    label.set_text(&usage);
-
-                    gtk::glib::timeout_future_seconds(2).await;
-                }
-            }
-        ));
-
-        Self { root }
     }
 
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self { usage: 0.0 };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
     }
 
-    fn format(system: &Rc<RefCell<System>>) -> String {
-        let system = system.borrow();
-        let usage = system.global_cpu_usage();
-        format!(" {usage:.0}%")
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            CpuMsg::UpdateUsage { usage } => self.usage = usage,
+        }
     }
 }

@@ -1,5 +1,5 @@
 use futures_util::io::{AsyncReadExt, AsyncWriteExt};
-use gtk::gio::{prelude::*, SocketClient, UnixSocketAddress};
+use relm4::gtk::gio::{prelude::*, SocketClient, UnixSocketAddress};
 use serde::Deserialize;
 use std::{env, path::Path};
 

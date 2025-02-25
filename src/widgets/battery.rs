@@ -1,10 +1,9 @@
-use gtk::{
-    glib::{clone, MainContext},
+use relm4::{
+    gtk::{self, prelude::*},
     prelude::*,
 };
-use relm4_macros::view;
 
-use crate::battery::get_batteries;
+use crate::battery::{get_batteries, BatteryInfo};
 
 const ICONS_CHARGING: [&str; 11] = [
     "󰢟 ", "󰢜 ", "󰂆 ", "󰂇 ", "󰂈 ", "󰢝 ", "󰂉 ", "󰢞 ", "󰂊 ", "󰂋 ", "󰂅 ",
@@ -14,46 +13,22 @@ const ICONS: [&str; 11] = [
     "󰂎 ", "󰁺 ", "󰁻 ", "󰁼 ", "󰁽 ", "󰁾 ", "󰁿 ", "󰂀 ", "󰂁 ", "󰂂 ", "󰁹 ",
 ];
 
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum BatteryMsg {
+    Update,
 }
 
-impl Widget {
-    pub fn new(battery_name: String) -> Self {
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
+pub struct BatteryModel {
+    battery_name: String,
 
-                set_css_classes: &["widget", "battery"],
+    battery_info: BatteryInfo,
+}
 
-                append: label = &gtk::Label {
-                    set_text: &Self::format(&battery_name),
-                }
-            }
-        }
+impl BatteryModel {
+    fn format_icon(&self) -> &'static str {
+        let status = &self.battery_info.status;
+        let capacity = self.battery_info.capacity;
 
-        let ctx = MainContext::default();
-        ctx.spawn_local(clone!(
-            #[strong]
-            label,
-            async move {
-                loop {
-                    gtk::glib::timeout_future_seconds(10).await;
-                    let capacity = Self::format(&battery_name);
-                    label.set_text(&capacity);
-                }
-            }
-        ));
-
-        Self { root }
-    }
-
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
-    }
-
-    fn format_icon(status: &str, capacity: i32) -> &'static str {
         let capacity_norm = f64::from(capacity) / 100.0;
         if status == "Charging" {
             let idx = capacity_norm * (ICONS_CHARGING.len() as f64 - 1.0);
@@ -66,11 +41,55 @@ impl Widget {
         }
     }
 
-    fn format(battery_name: &str) -> String {
-        let batteries = get_batteries();
-        let battery = &batteries[battery_name];
+    fn format(&self) -> String {
+        let icon = self.format_icon();
+        format!("{}{}%", icon, self.battery_info.capacity)
+    }
+}
 
-        let icon = Self::format_icon(&battery.status, battery.capacity);
-        format!("{}{}%", icon, battery.capacity)
+#[relm4::component(pub)]
+impl SimpleComponent for BatteryModel {
+    type Init = String;
+
+    type Input = BatteryMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "battery"],
+
+            append: label = &gtk::Label {
+                set_text: &model.format(),
+            }
+        }
+    }
+
+    fn init(
+        battery_name: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let battery_info = get_batteries().remove(&battery_name).unwrap();
+        let model = Self {
+            battery_name,
+            battery_info,
+        };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            BatteryMsg::Update => {
+                if let Some(battery_info) = get_batteries().remove(&self.battery_name) {
+                    self.battery_info = battery_info;
+                }
+            }
+        }
     }
 }

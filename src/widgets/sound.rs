@@ -1,89 +1,123 @@
-use async_broadcast::Receiver;
-use gtk::{glib::MainContext, prelude::*};
-use pulse::volume::Volume;
-use relm4_macros::view;
+use pulse::{context::State, volume::Volume};
+use relm4::{
+    gtk::{self, prelude::*},
+    prelude::*,
+};
 
 use crate::pulse_wrapper::{PulseaudioEvent, SinkInfo};
 
-pub struct Widget {
-    root: gtk::Box,
+#[derive(Debug)]
+pub enum SoundMsg {
+    Update(PulseaudioEvent),
 }
 
-impl Widget {
-    pub fn new(mut pulse_rx: Receiver<PulseaudioEvent>) -> Self {
-        view! {
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 4,
+pub struct SoundModel {
+    active_sink_info: Option<SinkInfo>,
+}
 
-                set_css_classes: &["widget", "sound"],
-
-                append: label = &gtk::Label {}
-            }
-        }
-
-        let ctx = MainContext::default();
-        ctx.spawn_local(async move {
-            let mut active_sink_index = u32::MAX;
-            while let Ok(event) = pulse_rx.recv().await {
-                match event {
-                    PulseaudioEvent::DefaultSinkChanged(sink_info) => {
-                        active_sink_index = sink_info.index;
-                        Self::update_label(&label, &sink_info);
-                    }
-                    PulseaudioEvent::SinkUpdate { sink_info, .. }
-                        if sink_info.index == active_sink_index =>
-                    {
-                        Self::update_label(&label, &sink_info);
-                    }
-                    _ => {}
-                }
-            }
-        });
-
-        Self { root }
-    }
-
-    pub fn widget(&self) -> &gtk::Widget {
-        self.root.upcast_ref()
-    }
-
-    fn update_label(label: &gtk::Label, sink_info: &SinkInfo) {
-        if let Some(icon) = Self::format_icon(sink_info) {
-            let volume = Self::format_volume(sink_info);
-            label.set_text(&format!("{icon} {volume}"));
-        }
-    }
-
-    fn format_icon(sink_info: &SinkInfo) -> Option<&'static str> {
+impl SoundModel {
+    fn format_icon(&self) -> &'static str {
         const SPEAKER_ICONS: [&str; 3] = ["󰕿", "󰖀", "󰕾"];
         const SPEAKER_MUTED_ICON: &str = "󰖁";
-
         const BLUETOOTH_ICON: &str = "󰂰";
         const BLUETOOTH_MUTED_ICON: &str = "󰂲";
 
-        if let Some(sink_name) = &sink_info.name {
-            if sink_name.starts_with("bluez_") {
-                if sink_info.mute {
-                    Some(BLUETOOTH_MUTED_ICON)
+        let Some(ref sink_info) = self.active_sink_info else {
+            return SPEAKER_ICONS[0];
+        };
+
+        if let Some(name) = sink_info.name.as_deref() {
+            if name.starts_with("bluez_") {
+                return if sink_info.mute {
+                    BLUETOOTH_MUTED_ICON
                 } else {
-                    Some(BLUETOOTH_ICON)
-                }
-            } else if sink_info.mute {
-                Some(SPEAKER_MUTED_ICON)
-            } else {
-                let volume_norm = f64::from(sink_info.volume.avg().0) / f64::from(Volume::NORMAL.0);
-                let icon_index = (volume_norm * (SPEAKER_ICONS.len() - 1) as f64).round() as usize;
-                Some(SPEAKER_ICONS[icon_index])
+                    BLUETOOTH_ICON
+                };
             }
+        }
+
+        if sink_info.mute {
+            return SPEAKER_MUTED_ICON;
+        }
+
+        let volume_norm = f64::from(sink_info.volume.avg().0) / f64::from(Volume::NORMAL.0);
+        let icon_index = (volume_norm * (SPEAKER_ICONS.len() - 1) as f64).round() as usize;
+        SPEAKER_ICONS[icon_index]
+    }
+
+    fn format_volume(&self) -> String {
+        if let Some(ref sink_info) = self.active_sink_info {
+            let volume_norm = f64::from(sink_info.volume.avg().0) / f64::from(Volume::NORMAL.0);
+            let volume = volume_norm * 100.0;
+            format!("{volume:.0}%")
         } else {
-            None
+            "0%".to_string()
         }
     }
 
-    fn format_volume(sink_info: &SinkInfo) -> String {
-        let volume_norm = f64::from(sink_info.volume.avg().0) / f64::from(Volume::NORMAL.0);
-        let volume = volume_norm * 100.0;
-        format!("{volume:.0}%")
+    fn format(&self) -> String {
+        if self.active_sink_info.is_some() {
+            let icon = self.format_icon();
+            let volume = self.format_volume();
+            format!("{icon} {volume}")
+        } else {
+            "󰝞".to_string()
+        }
+    }
+}
+
+#[relm4::component(pub)]
+impl SimpleComponent for SoundModel {
+    type Init = ();
+
+    type Input = SoundMsg;
+    type Output = ();
+
+    view! {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 4,
+
+            set_css_classes: &["widget", "sound"],
+
+            append: label = &gtk::Label {
+                #[watch]
+                set_text: &model.format()
+            }
+        }
+    }
+
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        _sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let model = Self {
+            active_sink_info: None,
+        };
+
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            SoundMsg::Update(PulseaudioEvent::DefaultSinkChanged(default_sink)) => {
+                self.active_sink_info = Some(default_sink);
+            }
+            SoundMsg::Update(PulseaudioEvent::SinkUpdate { sink_info, .. })
+                if self
+                    .active_sink_info
+                    .as_ref()
+                    .is_none_or(|active_sink_info| sink_info.index == active_sink_info.index) =>
+            {
+                self.active_sink_info = Some(sink_info);
+            }
+            SoundMsg::Update(PulseaudioEvent::StateChange(State::Failed | State::Terminated)) => {
+                self.active_sink_info = None;
+            }
+            _ => {}
+        }
     }
 }

@@ -1,28 +1,32 @@
-use async_broadcast::{InactiveReceiver, Receiver, Sender};
 use futures_util::io::AsyncBufReadExt;
-use gtk::gio::{prelude::*, SocketClient, UnixSocketAddress};
-use std::{env, path::Path};
+use relm4::gtk::{
+    gio::{
+        IOStreamAsyncReadWrite, InputStreamAsyncBufRead, PollableInputStream, SocketClient,
+        SocketConnection, UnixSocketAddress,
+    },
+    prelude::*,
+};
+use std::{env, io, path::Path};
+use thiserror::Error;
 
-use super::events::Event;
+use super::events::HyprlandEvent;
 
-pub struct Listener {
-    tx: Sender<Event>,
-    rx: InactiveReceiver<Event>,
+#[derive(Error, Debug)]
+pub enum ListenerError {
+    #[error("failed to read line")]
+    IOError(#[from] io::Error),
+    #[error("failed to parse event")]
+    EventError(#[from] anyhow::Error),
 }
-impl Listener {
-    pub fn new() -> Self {
-        let (tx, rx) = async_broadcast::broadcast(4);
-        Self {
-            tx,
-            rx: rx.deactivate(),
-        }
-    }
 
-    pub fn receiver(&self) -> Receiver<Event> {
-        self.rx.activate_cloned()
-    }
+pub struct HyprlandListener {
+    _stream: IOStreamAsyncReadWrite<SocketConnection>,
+    reader: InputStreamAsyncBufRead<PollableInputStream>,
+    buffer: String,
+}
 
-    pub async fn run(self) -> anyhow::Result<()> {
+impl HyprlandListener {
+    pub async fn connect() -> anyhow::Result<Self> {
         let xdg_runtime_dir = env::var("XDG_RUNTIME_DIR").expect("XDG_RUNTIME_DIR is not set");
         let hyprland_instance_signature = env::var("HYPRLAND_INSTANCE_SIGNATURE")
             .expect("HYPRLAND_INSTANCE_SIGNATURE is not set");
@@ -37,15 +41,20 @@ impl Listener {
             .await?;
         let stream = conn.into_async_read_write().unwrap();
 
-        let mut reader = stream.input_stream().clone().into_async_buf_read(256);
+        let reader = stream.input_stream().clone().into_async_buf_read(256);
+        Ok(Self {
+            _stream: stream,
+            reader,
+            buffer: String::new(),
+        })
+    }
 
-        let mut line = String::new();
-        loop {
-            line.clear();
-            reader.read_line(&mut line).await?;
-            if let Ok(event) = Event::new(line.strip_suffix('\n').unwrap_or(&line)) {
-                self.tx.broadcast(event).await?;
-            }
-        }
+    pub async fn next(&mut self) -> Result<HyprlandEvent, ListenerError> {
+        self.buffer.clear();
+        self.reader.read_line(&mut self.buffer).await?;
+
+        Ok(HyprlandEvent::new(
+            self.buffer.strip_suffix('\n').unwrap_or(&self.buffer),
+        )?)
     }
 }
