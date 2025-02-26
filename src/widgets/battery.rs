@@ -62,6 +62,7 @@ impl SimpleComponent for BatteryModel {
             set_css_classes: &["widget", "battery"],
 
             append: label = &gtk::Label {
+                #[watch]
                 set_text: &model.format(),
             }
         }
