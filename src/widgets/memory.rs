@@ -25,7 +25,7 @@ impl SimpleComponent for MemoryModel {
             set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 4,
 
-            set_css_classes: &["widget", "cpu"],
+            set_css_classes: &["widget", "memory"],
 
             append: label = &gtk::Label {
                 #[watch]
