@@ -14,7 +14,7 @@ chrono = { version = "0.4.38", default-features = false, features = [
     "iana-time-zone",
 ] }
 futures-util = { version = "0.3.30", features = ["io"] }
-gtk4-layer-shell = "0.4.0"
+gtk4-layer-shell = "0.5.0"
 pollster = "0.4.0"
 pulse = { package = "libpulse-binding", version = "2.28.1" }
 pulse_glib = { package = "libpulse-glib-binding", version = "2.28.1" }
@@ -24,7 +24,7 @@ relm4 = { version = "0.9.1", default-features = false, features = [
 ] }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
-sysinfo = { version = "^0.33", default-features = false, features = [
+sysinfo = { version = "^0.34", default-features = false, features = [
     "system",
     "network",
 ] }

@@ -75,7 +75,7 @@ impl SimpleComponent for AppModel {
 
             init_layer_shell: (),
             set_layer: gtk4_layer_shell::Layer::Top,
-            set_namespace: "crabbar",
+            set_namespace: Some("crabbar"),
             auto_exclusive_zone_enable: (),
             set_anchor: (Edge::Top, true),
             set_anchor: (Edge::Left, true),
